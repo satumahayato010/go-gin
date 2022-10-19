@@ -1,26 +1,36 @@
 package main
 
 import (
-	"go-todo-api/controllers"
-	"go-todo-api/middleware"
+	"html/template"
+	"log"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
+func nl2br(text string) template.HTML {
+	return template.HTML(strings.Replace(template.HTMLEscapeString(text), "\n", "<br />", -1))
+}
+
 func main() {
-	engine := gin.Default()
+	router := gin.Default()
+	router.SetFuncMap(template.FuncMap{
+		"nl2br": nl2br,
+	})
 
-	engine.Use(middleware.RecordUaAndTime)
+	router.LoadHTMLGlob("templates/*.html")
 
-	bookEngine := engine.Group("/book")
-	{
-		v1 := bookEngine.Group("/v1")
-		{
-			v1.POST("/add", controllers.BookAdd)
-			v1.GET("/list", controllers.BookList)
-			v1.PUT("/update", controllers.BookUpdate)
-			v1.DELETE("/delete", controllers.BookDelete)
+	router.GET("/", func(c *gin.Context) {
+		c.HTML(200, "index.html", nil)
+	})
+
+	router.POST("/result", func(c *gin.Context) {
+		result, ok := c.GetPostForm("result")
+		if ok != true {
+			log.Fatal("ERROR")
 		}
-	}
-	engine.Run(":8080")
+		c.HTML(200, "result.html", result)
+	})
+
+	router.Run(":8080")
 }
